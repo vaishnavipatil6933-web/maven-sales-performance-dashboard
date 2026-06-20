@@ -1,0 +1,230 @@
+-- MAVEN SALES CHALLENGE
+-- Exploratory SQL Analysis
+-- Author: Vaishnavi Patil
+
+-- Data Quality
+CREATE DATABASE maven_sales;
+SHOW DATABASES;
+USE maven_sales;
+SHOW TABLES;
+SELECT COUNT(*) FROM accounts;
+SELECT COUNT(*) FROM products;
+SELECT COUNT(*) FROM sales_teams;
+SELECT COUNT(*) FROM sales_pipeline;
+
+
+-- Basic Exploration 
+SELECT COUNT(*) AS total_opportunities FROM sales_pipeline;
+
+SELECT MIN(close_date), MAX(close_date) FROM sales_pipeline;
+
+
+SELECT deal_stage, COUNT(*) AS count
+FROM sales_pipeline
+GROUP BY deal_stage
+ORDER BY count DESC;
+
+SELECT 
+  SUM(CASE WHEN close_value IS NULL THEN 1 ELSE 0 END) AS null_revenue,
+  SUM(CASE WHEN sales_agent IS NULL THEN 1 ELSE 0 END) AS null_agent,
+  SUM(CASE WHEN account IS NULL THEN 1 ELSE 0 END) AS null_account
+FROM sales_pipeline;
+
+
+--  Business Questions :-
+-- Win rate by product
+SELECT 
+  p.product,
+  COUNT(*) AS total_deals,
+  SUM(CASE WHEN sp.deal_stage = 'Won' THEN 1 ELSE 0 END) AS won_deals,
+  ROUND(SUM(CASE WHEN sp.deal_stage = 'Won' THEN 1 ELSE 0 END) * 100.0 
+        / COUNT(*), 2) AS win_rate_pct
+FROM sales_pipeline sp
+JOIN products p ON sp.product = p.product
+GROUP BY p.product
+ORDER BY win_rate_pct DESC;
+
+-- Revenue by sales agent (only won deals)
+SELECT 
+  sales_agent,
+  COUNT(*) AS deals_won,
+  ROUND(SUM(close_value), 2) AS total_revenue,
+  ROUND(AVG(close_value), 2) AS avg_deal_value
+FROM sales_pipeline
+WHERE deal_stage = 'Won'
+GROUP BY sales_agent
+ORDER BY total_revenue DESC;
+
+-- Which accounts bring the most revenue?
+SELECT 
+  account,
+  COUNT(*) AS total_deals,
+  ROUND(SUM(close_value), 2) AS total_revenue
+FROM sales_pipeline
+WHERE deal_stage = 'Won'
+GROUP BY account
+ORDER BY total_revenue DESC
+LIMIT 10;
+
+
+--  Where should we focus before quarter end?
+SELECT 
+  sp.opportunity_id,
+  sp.sales_agent,
+  st.manager,
+  sp.account,
+  sp.product,
+  sp.close_value,
+  sp.deal_stage,
+  DATEDIFF(CURDATE(), sp.engage_date) AS days_in_pipeline,
+  CASE 
+    WHEN DATEDIFF(CURDATE(), sp.engage_date) > 60 THEN 'At Risk'
+    WHEN DATEDIFF(CURDATE(), sp.engage_date) BETWEEN 30 AND 60 THEN 'Monitor'
+    ELSE 'On Track'
+  END AS deal_status,
+  CASE
+    WHEN sp.close_value >= 5000 THEN 'High Value'
+    WHEN sp.close_value BETWEEN 2000 AND 4999 THEN 'Mid Value'
+    ELSE 'Low Value'
+  END AS deal_priority
+FROM sales_pipeline sp
+JOIN sales_teams st ON sp.sales_agent = st.sales_agent
+WHERE sp.deal_stage = 'Engaging'
+ORDER BY sp.close_value DESC, days_in_pipeline DESC;
+
+-- Average deal cycle in days 
+SELECT 
+  deal_stage,
+  ROUND(AVG(DATEDIFF(close_date, engage_date)), 1) AS avg_days_to_close
+FROM sales_pipeline
+WHERE close_date IS NOT NULL AND engage_date IS NOT NULL
+GROUP BY deal_stage;
+
+-- Manager-wise team performance
+SELECT 
+  st.manager,
+  COUNT(*) AS total_deals,
+  SUM(CASE WHEN sp.deal_stage = 'Won' THEN 1 ELSE 0 END) AS won,
+  ROUND(SUM(CASE WHEN sp.deal_stage = 'Won' THEN 1 ELSE 0 END) * 100.0 
+        / COUNT(*), 2) AS team_win_rate,
+  ROUND(SUM(CASE WHEN sp.deal_stage = 'Won' THEN sp.close_value ELSE 0 END), 2) AS team_revenue
+FROM sales_pipeline sp
+JOIN sales_teams st ON sp.sales_agent = st.sales_agent
+GROUP BY st.manager
+ORDER BY team_revenue DESC;
+
+SELECT close_date FROM sales_pipeline LIMIT 20;
+DESCRIBE sales_pipeline;
+
+SELECT close_date FROM sales_pipeline 
+WHERE close_date IS NOT NULL 
+AND close_date != ''
+LIMIT 5;
+SET SQL_SAFE_UPDATES = 0;
+UPDATE sales_pipeline
+SET close_date = STR_TO_DATE(close_date, '%m/%d/%Y')
+WHERE close_date IS NOT NULL AND close_date != '';
+ALTER TABLE sales_pipeline
+MODIFY COLUMN close_date DATE;
+SET SQL_SAFE_UPDATES = 1;
+
+-- Monthly revenue trend
+SELECT 
+  DATE_FORMAT(close_date, '%Y-%m') AS month,
+  ROUND(SUM(close_value), 2) AS monthly_revenue,
+  COUNT(*) AS deals_closed
+FROM sales_pipeline
+WHERE deal_stage = 'Won'
+GROUP BY DATE_FORMAT(close_date, '%Y-%m')
+ORDER BY month;
+
+-- Rank agents by revenue within each manager's team
+SELECT 
+  st.manager,
+  sp.sales_agent,
+  ROUND(SUM(sp.close_value), 2) AS revenue,
+  RANK() OVER (PARTITION BY st.manager ORDER BY SUM(sp.close_value) DESC) AS rank_in_team
+FROM sales_pipeline sp
+JOIN sales_teams st ON sp.sales_agent = st.sales_agent
+WHERE sp.deal_stage = 'Won'
+GROUP BY st.manager, sp.sales_agent;
+
+-- Quarter over quarter comparison using subquery
+SELECT 
+  QUARTER(close_date) AS quarter,
+  YEAR(close_date) AS year,
+  ROUND(SUM(close_value), 2) AS revenue,
+  ROUND(SUM(close_value) - LAG(SUM(close_value)) 
+        OVER (ORDER BY YEAR(close_date), QUARTER(close_date)), 2) AS qoq_change
+FROM sales_pipeline
+WHERE deal_stage = 'Won'
+GROUP BY YEAR(close_date), QUARTER(close_date)
+ORDER BY year, quarter;
+
+-- INSIGHT: Revenue peaked in Q2 2017 (+$1.95M vs Q1)
+-- but declined in Q3 (-$103K) and Q4 (-$179K)
+-- BUSINESS QUESTION: What caused Q2 spike and Q3/Q4 drop?
+-- RECOMMENDATION: Investigate agent activity and product 
+
+-- Products performing above average win rate
+SELECT 
+    product,
+    total_deals,
+    won_deals,
+    win_rate
+FROM (
+    SELECT 
+        product,
+        COUNT(*) AS total_deals,
+        SUM(CASE WHEN deal_stage = 'Won' THEN 1 ELSE 0 END) AS won_deals,
+        ROUND(SUM(CASE WHEN deal_stage = 'Won' THEN 1 ELSE 0 END) * 100.0 
+              / COUNT(*), 2) AS win_rate
+    FROM sales_pipeline
+    GROUP BY product
+) AS product_stats
+WHERE win_rate > (
+    SELECT ROUND(AVG(win_rate), 2)
+    FROM (
+        SELECT 
+            ROUND(SUM(CASE WHEN deal_stage = 'Won' THEN 1 ELSE 0 END) * 100.0 
+                  / COUNT(*), 2) AS win_rate
+        FROM sales_pipeline
+        GROUP BY product
+    ) AS avg_calc
+)
+ORDER BY win_rate DESC;
+
+
+-- Executive summary: overall business health
+SELECT 
+    COUNT(*) AS total_opportunities,
+    SUM(CASE WHEN deal_stage = 'Won' THEN 1 ELSE 0 END) AS total_won,
+    SUM(CASE WHEN deal_stage = 'Lost' THEN 1 ELSE 0 END) AS total_lost,
+    SUM(CASE WHEN deal_stage = 'Engaging' THEN 1 ELSE 0 END) AS open_pipeline,
+    ROUND(SUM(CASE WHEN deal_stage = 'Won' THEN 1 ELSE 0 END) * 100.0 
+          / COUNT(*), 2) AS overall_win_rate,
+    ROUND(SUM(CASE WHEN deal_stage = 'Won' THEN close_value ELSE 0 END), 2) AS total_revenue,
+    ROUND(AVG(CASE WHEN deal_stage = 'Won' THEN close_value END), 2) AS avg_deal_value,
+    ROUND(AVG(CASE WHEN deal_stage = 'Won' 
+              THEN DATEDIFF(close_date, engage_date) END), 1) AS avg_days_to_close
+FROM sales_pipeline;
+
+
+-- EXECUTIVE SUMMARY INSIGHTS:
+-- Total Pipeline: 6,711 opportunities
+-- Win Rate: 63.15% (strong performance)
+-- Total Revenue Won: $10,005,534
+-- Avg Deal Value: $2,360.91
+-- Open Pipeline: 0 (all deals closed - historical dataset)
+
+SELECT deal_stage, COUNT(*) 
+FROM sales_pipeline
+GROUP BY deal_stage;
+
+-- NOTE: Dataset is fully historical (Oct 2016 - Dec 2017)
+-- All deals are either Won or Lost
+-- No open pipeline exists in this dataset
+-- Potential to Close = N/A for this dataset
+
+
+
