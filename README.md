@@ -1,13 +1,76 @@
+# 📊 MavenTech Sales Performance Dashboard
+
+An end-to-end sales analytics solution built to help sales managers 
+track quarterly team performance, identify coaching opportunities, 
+and optimize product strategy — from raw data to interactive dashboard.
+
+![Dashboard Preview](01_executive_overview.png)
+
+---
+
+## 🎯 Project Overview
+
+MavenTech sells computer hardware to large businesses and uses a CRM 
+to track sales opportunities, but lacked visibility into performance 
+trends outside the platform. This project builds a complete data 
+pipeline — from raw CRM export to an interactive Power BI dashboard — 
+enabling sales managers to track their team's quarterly performance 
+at a glance.
+
+**Dataset:** Maven Sales Challenge (public dataset, Oct 2016 – Dec 2017)  
+**Records:** 6,711 sales opportunities | 30 agents | 7 products
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Tools |
+|---|---|
+| Database | MySQL |
+| Data Cleaning | SQL, Power Query (M Language) |
+| Data Modeling | Power BI (Star Schema) |
+| Calculations | DAX |
+| Visualization | Power BI |
+
+---
+
+## 🏗️ End-to-End Workflow
+
+```
+Raw CSV Data
+   ↓
+MySQL (Data Loading & Exploratory SQL Analysis)
+   ↓
+Power Query (Cleaning & Transformation)
+   ↓
+Star Schema Data Model
+   ↓
+DAX Measures (20+ calculations)
+   ↓
+Interactive Power BI Dashboard
+   ↓
+Business Insights & Recommendations
+```
+
+---
+
+## 🗂️ Data Model — Star Schema
+
+![Star Schema](star_schema.png)
+
+```
+                dim_sales_team
+                      │
+dim_product ── fact_sales ── dim_date (custom-built)
+                      │
+                dim_account
+```
+
 - **Fact Table:** `fact_sales` (6,711 records)
 - **Dimension Tables:** `dim_account`, `dim_product`, `dim_sales_team`, `dim_date`
 - `dim_date` was custom-built in Power Query (M Language) with Year, Quarter, Month, and Weekday hierarchies for time intelligence.
 
 ---
-
----
-## 🗂️ Data Model — Star Schema
-
-![Star Schema](star_schema.png)
 
 ## 💻 SQL Analysis Highlights
 
@@ -41,9 +104,7 @@ ORDER BY total_revenue DESC;
 
 20+ custom measures including:
 - **Time Intelligence:** Revenue QTD, MTD, YTD, QoQ Change
-- **Performance Logic:** Custom `Performance Tag` measure classifying 
-  agents as Top Performer / On Track / Needs Support based on win 
-  rate vs. team average
+- **Performance Logic:** Custom `Performance Tag` measure classifying agents as Top Performer / On Track / Needs Support based on win rate vs. team average
 - **Core KPIs:** Win Rate %, Avg Deal Value, Avg Deal Cycle Days
 
 ```dax
@@ -65,62 +126,45 @@ SWITCH(
 
 ### 1. Executive Overview
 ![Executive Overview](01_executive_overview.png)
-High-level KPIs, quarterly revenue trend, and top-agent snapshot 
-for quick team health checks.
+High-level KPIs, quarterly revenue trend, and top-agent snapshot for quick team health checks.
 
 ### 2. Agent Performance
 ![Agent Performance](02_agent_performance.png)
-Individual agent breakdown with conditional formatting and a custom 
-Performance Tag to instantly flag who needs coaching support.
+Individual agent breakdown with conditional formatting and a custom Performance Tag to instantly flag who needs coaching support.
 
 ### 3. Product Analysis
 ![Product Analysis](03_product_analysis.png)
-Product-level revenue and win-rate analysis, including a 
-demand-vs-revenue scatter plot to identify high-volume vs 
-high-margin products.
+Product-level revenue and win-rate analysis, including a demand-vs-revenue scatter plot to identify high-volume vs high-margin products.
 
 ---
 
 ## 🔍 Key Business Insights
 
 **1. Revenue Decline Post-Q2**
-Revenue peaked in Q2 2017 and declined through Q3-Q4, signaling a 
-need to investigate what drove Q2 success and replicate it.
+Revenue peaked in Q2 2017 and declined through Q3-Q4, signaling a need to investigate what drove Q2 success and replicate it.
 
 **2. 24-Point Win Rate Gap Between Agents**
-Top performer (65% win rate) outperforms the lowest-performing 
-agents by 24+ points — suggesting a coaching/mentorship opportunity 
-rather than territory or luck differences.
+Top performer (65% win rate) outperforms the lowest-performing agents by 24+ points — suggesting a coaching/mentorship opportunity rather than territory or luck differences.
 
 **3. GTX Pro Drives Highest Revenue**
-Despite a moderate 49% win rate, GTX Pro generates $3.51M in revenue 
-— the highest of any product — confirming its premium positioning 
-is working.
+Despite a moderate 49% win rate, GTX Pro generates $3.51M in revenue — the highest of any product — confirming its premium positioning is working.
 
 **4. GTK 500 Underperforms Across the Board**
-Lowest win rate (38%) and lowest deal volume (40 deals) — a 
-candidate for repricing or discontinuation.
+Lowest win rate (38%) and lowest deal volume (40 deals) — a candidate for repricing or discontinuation.
 
 ---
 
 ## 📌 Key Assumptions
 
-- Dataset is fully historical (Oct 2016 – Dec 2017); all deals are 
-  either Won or Lost, with no open pipeline
+- Dataset is fully historical (Oct 2016 – Dec 2017); all deals are either Won or Lost, with no open pipeline
 - "Current Quarter" refers to Q4 2017, the most recent period in the data
-- Dashboard designed primarily for sales managers tracking their own 
-  team's performance
+- Dashboard designed primarily for sales managers tracking their own team's performance
 
 ---
 
 ## 🚀 What I Learned
 
-This project took me through the complete analyst workflow — not 
-just building charts, but understanding data end-to-end: writing 
-SQL to explore raw CRM data, designing a proper star schema, 
-debugging real data quality issues (a product name mismatch that 
-was hiding $3.5M in revenue from every visual), and translating 
-numbers into business recommendations.
+This project took me through the complete analyst workflow — not just building charts, but understanding data end-to-end: writing SQL to explore raw CRM data, designing a proper star schema, debugging real data quality issues (a product name mismatch that was hiding $3.5M in revenue from every visual), and translating numbers into business recommendations.
 
 ---
 
