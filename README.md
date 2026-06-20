@@ -81,7 +81,7 @@ dim_product ── fact_sales ── dim_date (custom-built)
 - Subqueries for product win-rate benchmarking
 - Date functions for monthly/quarterly trend analysis
 
-📄 [View full SQL file](sql/maven_sales_analysis.sql)
+📄 [View full SQL file](sql/maven_sales_analysis)
 
 ```sql
 -- Example: Identify agents performing above team average
