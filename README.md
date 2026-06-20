@@ -1,9 +1,13 @@
 - **Fact Table:** `fact_sales` (6,711 records)
 - **Dimension Tables:** `dim_account`, `dim_product`, `dim_sales_team`, `dim_date`
-- `dim_date` was custom-built in Power Query (M Language) with Year, 
-  Quarter, Month, and Weekday hierarchies for time intelligence.
+- `dim_date` was custom-built in Power Query (M Language) with Year, Quarter, Month, and Weekday hierarchies for time intelligence.
 
 ---
+
+---
+## 🗂️ Data Model — Star Schema
+
+![Star Schema](star_schema.png)
 
 ## 💻 SQL Analysis Highlights
 
