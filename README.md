@@ -60,17 +60,17 @@ SWITCH(
 ## 📈 Dashboard Pages
 
 ### 1. Executive Overview
-![Executive Overview](screenshots/01_executive_overview.png)
+![Executive Overview](01_executive_overview.png)
 High-level KPIs, quarterly revenue trend, and top-agent snapshot 
 for quick team health checks.
 
 ### 2. Agent Performance
-![Agent Performance](screenshots/02_agent_performance.png)
+![Agent Performance](02_agent_performance.png)
 Individual agent breakdown with conditional formatting and a custom 
 Performance Tag to instantly flag who needs coaching support.
 
 ### 3. Product Analysis
-![Product Analysis](screenshots/03_product_analysis.png)
+![Product Analysis](03_product_analysis.png)
 Product-level revenue and win-rate analysis, including a 
 demand-vs-revenue scatter plot to identify high-volume vs 
 high-margin products.
